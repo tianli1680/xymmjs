@@ -37,7 +37,7 @@ jobs:
           
           echo "获取成功，开始解析..."
           
-          # 使用jq提取URL（更简单可靠）
+          # 使用jq提取URL
           jq -r '.lives[]?.url' main_data.json | grep -v '^null$' > source_urls.txt
           
           URL_COUNT=$(wc -l < source_urls.txt)
@@ -142,24 +142,16 @@ jobs:
               
               echo "成功下载: ${success_count} 个直播源"
               
-              # 去重
-              python3 -c '
-seen = set()
-result = []
-with open("live.txt", "r", encoding="utf-8", errors="ignore") as f:
-    for line in f:
-        line = line.rstrip("\n")
-        if line.startswith("#") or not line.strip():
-            result.append(line)
-        else:
-            if line not in seen:
-                seen.add(line)
-                result.append(line)
-with open("live.txt", "w", encoding="utf-8") as f:
-    f.write("\n".join(result))
-print(f"去重后保留 {len(result)} 行")
-print(f"直播源数量: {sum(1 for x in result if x.startswith('http'))}")
-'
+              # 使用awk去重
+              cp live.txt live.tmp
+              awk '!seen[$0]++ || /^#/ || /^$/' live.tmp > live.txt
+              rm live.tmp
+              
+              STREAM_COUNT=$(grep -c '^http' live.txt || echo 0)
+              TOTAL_LINES=$(wc -l < live.txt)
+              
+              echo "去重后保留 ${TOTAL_LINES} 行"
+              echo "其中直播源地址: ${STREAM_COUNT} 个"
               
               echo ""
               echo "最终文件大小：$(wc -c < live.txt) 字节"
@@ -177,7 +169,7 @@ print(f"直播源数量: {sum(1 for x in result if x.startswith('http'))}")
         run: |
           rm -rf download_temp
           rm -rf /tmp/download_pids
-          rm -f source_urls.txt main_data.json
+          rm -f source_urls.txt main_data.json live.tmp
           
       - name: 上传结果文件
         uses: actions/upload-artifact@v4
