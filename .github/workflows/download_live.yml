@@ -18,7 +18,7 @@ jobs:
       - name: 安装依赖工具
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq curl wget
+          sudo apt-get install -y jq curl wget python3
           
       - name: 下载并解析主播放列表
         run: |
@@ -26,7 +26,7 @@ jobs:
           
           echo "正在获取主播放列表..."
           
-          # 直接获取JSON数据（不是Base64编码的）
+          # 直接获取JSON数据
           curl -s -L --retry 3 --retry-delay 2 \
             -H "User-Agent: okHttp/3.12.1" \
             -H "Accept: application/json" \
@@ -43,51 +43,45 @@ jobs:
           echo ""
           
           # 使用Python解析JSON并提取所有URL
-          python3 << 'EOF'
-          import json
-          import sys
-          
-          try:
-              # 直接读取JSON文件
-              with open('main_data.json', 'r', encoding='utf-8') as f:
-                  content = f.read()
-              
-              # 尝试解析JSON
-              json_data = json.loads(content)
-              
-              # 提取所有url字段
-              urls = []
-              if 'lives' in json_data:
-                  for item in json_data['lives']:
-                      if 'url' in item and item['url']:
-                          urls.append(item['url'])
-              
-              # 保存URLs到文件
-              with open('source_urls.txt', 'w') as f:
-                  for url in urls:
-                      if url.strip():
-                          f.write(url.strip() + '\n')
-              
-              print(f"成功提取了 {len(urls)} 个直播源地址")
-              
-              # 显示前5个URL用于调试
-              if urls:
-                  print("\n前5个直播源地址：")
-                  for i, url in enumerate(urls[:5], 1):
-                      print(f"{i}. {url}")
-              
-              if not urls:
-                  print("警告：没有找到任何直播源URL", file=sys.stderr)
-                  sys.exit(1)
-                  
-          except json.JSONDecodeError as e:
-              print(f"JSON解析失败: {e}", file=sys.stderr)
-              print("文件内容前200字符:", content[:200], file=sys.stderr)
-              sys.exit(1)
-          except Exception as e:
-              print(f"处理失败: {e}", file=sys.stderr)
-              sys.exit(1)
-          EOF
+          python3 -c "
+import json
+import sys
+
+try:
+    with open('main_data.json', 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    json_data = json.loads(content)
+    
+    urls = []
+    if 'lives' in json_data:
+        for item in json_data['lives']:
+            if 'url' in item and item['url']:
+                urls.append(item['url'])
+    
+    with open('source_urls.txt', 'w') as f:
+        for url in urls:
+            if url.strip():
+                f.write(url.strip() + '\n')
+    
+    print(f'成功提取了 {len(urls)} 个直播源地址')
+    
+    if urls:
+        print('\n前5个直播源地址：')
+        for i, url in enumerate(urls[:5], 1):
+            print(f'{i}. {url}')
+    
+    if not urls:
+        print('警告：没有找到任何直播源URL', file=sys.stderr)
+        sys.exit(1)
+        
+except json.JSONDecodeError as e:
+    print(f'JSON解析失败: {e}', file=sys.stderr)
+    sys.exit(1)
+except Exception as e:
+    print(f'处理失败: {e}', file=sys.stderr)
+    sys.exit(1)
+"
           
       - name: 显示所有提取的URL
         run: |
@@ -116,19 +110,17 @@ jobs:
               
               echo "[$(date '+%H:%M:%S')] 开始下载 #${index}: $(echo "$url" | cut -c1-80)"
               
-              # 使用curl下载，添加超时和重试
+              # 使用curl下载
               if curl -s -L --max-time 30 --connect-timeout 10 --retry 2 \
                 -H "User-Agent: okHttp/3.12.1" \
                 -H "Accept: */*" \
                 -H "Connection: keep-alive" \
                 "$url" 2>/dev/null > "$temp_file"; then
                   
-                  # 检查下载的文件是否为空
                   if [ -s "$temp_file" ]; then
                       file_size=$(wc -c < "$temp_file")
-                      echo "[$(date '+%H:%M:%S')] ✓ 成功 #${index}: $(echo "$url" | cut -c1-60) (${file_size} 字节)"
+                      echo "[$(date '+%H:%M:%S')] ✓ 成功 #${index}: (${file_size} 字节)"
                       
-                      # 保存到最终文件
                       {
                           echo "# Source: $url"
                           echo "# Downloaded: $(date '+%Y-%m-%d %H:%M:%S')"
@@ -139,11 +131,11 @@ jobs:
                       } >> "download_temp/part_${index}.txt"
                       return 0
                   else
-                      echo "[$(date '+%H:%M:%S')] ✗ 失败（空文件） #${index}: $(echo "$url" | cut -c1-60)"
+                      echo "[$(date '+%H:%M:%S')] ✗ 失败（空文件） #${index}"
                       return 1
                   fi
               else
-                  echo "[$(date '+%H:%M:%S')] ✗ 失败（连接错误） #${index}: $(echo "$url" | cut -c1-60)"
+                  echo "[$(date '+%H:%M:%S')] ✗ 失败（连接错误） #${index}"
                   return 1
               fi
           }
@@ -165,24 +157,20 @@ jobs:
               
               current_index=$((current_index + 1))
               
-              # 启动下载任务
               download_url "$url" "$current_index" &
               pid=$!
               echo $pid > "/tmp/download_pids/pid_${current_index}"
               
               active_jobs=$((active_jobs + 1))
               
-              # 如果达到最大并发数，等待任意一个完成
               if [ $active_jobs -ge $MAX_CONCURRENT ]; then
                   wait -n 2>/dev/null || true
                   active_jobs=$((active_jobs - 1))
               fi
               
-              # 小延迟避免请求过于密集
               sleep 0.5
           done < source_urls.txt
           
-          # 等待所有后台任务完成
           echo "=========================================="
           echo "等待所有下载任务完成..."
           wait
@@ -196,7 +184,6 @@ jobs:
           
           success_count=0
           if ls download_temp/part_*.txt 1> /dev/null 2>&1; then
-              # 按索引顺序合并文件
               for file in $(ls download_temp/part_*.txt 2>/dev/null | sort -t_ -k2 -n); do
                   if [ -s "$file" ]; then
                       cat "$file" >> live.txt
@@ -206,42 +193,37 @@ jobs:
               
               echo "成功下载: ${success_count} 个直播源"
               
-              # 去重并清理（保留原始顺序）
-              python3 << 'EOF'
-              import sys
-              
-              seen = set()
-              unique_lines = []
-              comment_count = 0
-              
-              with open('live.txt', 'r', encoding='utf-8', errors='ignore') as f:
-                  for line in f:
-                      line_stripped = line.rstrip('\n')
-                      # 保留注释行和空行
-                      if line_stripped.startswith('#') or not line_stripped.strip():
-                          unique_lines.append(line_stripped)
-                          if line_stripped.startswith('#'):
-                              comment_count += 1
-                      else:
-                          if line_stripped not in seen:
-                              seen.add(line_stripped)
-                              unique_lines.append(line_stripped)
-              
-              with open('live.txt', 'w', encoding='utf-8') as f:
-                  f.write('\n'.join(unique_lines))
-              
-              # 统计实际的直播源数量（http开头的行）
-              stream_count = sum(1 for line in unique_lines if line.startswith('http'))
-              
-              print(f"去重后保留 {len(unique_lines)} 行")
-              print(f"其中直播源地址: {stream_count} 个")
-              print(f"注释行: {comment_count} 行")
-              EOF
+              # 去重并清理
+              python3 -c "
+seen = set()
+unique_lines = []
+comment_count = 0
+
+with open('live.txt', 'r', encoding='utf-8', errors='ignore') as f:
+    for line in f:
+        line_stripped = line.rstrip('\n')
+        if line_stripped.startswith('#') or not line_stripped.strip():
+            unique_lines.append(line_stripped)
+            if line_stripped.startswith('#'):
+                comment_count += 1
+        else:
+            if line_stripped not in seen:
+                seen.add(line_stripped)
+                unique_lines.append(line_stripped)
+
+with open('live.txt', 'w', encoding='utf-8') as f:
+    f.write('\n'.join(unique_lines))
+
+stream_count = sum(1 for line in unique_lines if line.startswith('http'))
+
+print(f'去重后保留 {len(unique_lines)} 行')
+print(f'其中直播源地址: {stream_count} 个')
+print(f'注释行: {comment_count} 行')
+"
               
               echo ""
               echo "最终文件大小：$(wc -c < live.txt) 字节"
               
-              # 显示预览
               echo ""
               echo "文件预览（前20行）："
               echo "----------------------------------------"
@@ -268,7 +250,6 @@ jobs:
       - name: 提交并推送到仓库
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
-          # 检查是否有内容可提交
           if [ -s live.txt ]; then
               git config user.name "github-actions[bot]"
               git config user.email "github-actions[bot]@users.noreply.github.com"
