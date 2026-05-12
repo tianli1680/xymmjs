@@ -5,6 +5,10 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:
 
+# 添加权限配置
+permissions:
+  contents: write
+
 jobs:
   download-and-save:
     runs-on: ubuntu-latest
@@ -13,11 +17,19 @@ jobs:
     steps:
       - name: 签出仓库代码
         uses: actions/checkout@v4
+        with:
+          # 使用完整的git历史
+          fetch-depth: 0
+          
+      - name: 配置git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: 安装依赖工具
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq curl wget python3
+          sudo apt-get install -y jq curl wget
           
       - name: 下载并解析主播放列表
         run: |
@@ -180,14 +192,18 @@ jobs:
           
       - name: 提交并推送到仓库
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ -s live.txt ]; then
-              git config user.name "github-actions[bot]"
-              git config user.email "github-actions[bot]@users.noreply.github.com"
+              # 拉取最新更改避免冲突
+              git pull --rebase || true
+              
               git add live.txt
               if ! git diff --staged --quiet; then
                   git commit -m "自动更新直播源 $(date '+%Y-%m-%d %H:%M:%S')"
-                  git push
+                  # 使用GITHUB_TOKEN进行推送
+                  git push https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:${GITHUB_REF_NAME}
                   echo "已提交到仓库"
               else
                   echo "没有变化，跳过提交"
