@@ -1,0 +1,62 @@
+name: 下载OK影视直播源
+
+on:
+  schedule:
+    # 每天北京时间上午8点自动运行（UTC时间0点）
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  download-and-save:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 签出仓库代码
+        uses: actions/checkout@v4
+
+      - name: 安装依赖工具
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: 解析并下载所有直播源
+        run: |
+          # 1. 获取主播放列表（即你提供的链接内容）
+          MAIN_URL="https://js.iptvlive.icu/iptv168"
+          MAIN_JSON=$(curl -s "$MAIN_URL")
+          
+          # 2. 解析出所有直播源的URL（该JSON是Base64编码）
+          echo "$MAIN_JSON" | base64 -d | jq -r '.live[].url' > source_urls.txt
+          
+          # 3. 创建目录和最终文件
+          mkdir -p download_temp
+          touch live.txt
+          
+          # 4. 逐个下载每个直播源文件，并追加到live.txt
+          while IFS= read -r url; do
+            echo "正在下载: $url"
+            # 模拟OK影视APP盒子的User-Agent
+            curl -s -L -A "okHttp/3.12.1" "$url" >> download_temp/part.txt
+            echo "" >> download_temp/part.txt  # 添加换行分隔
+          done < source_urls.txt
+          
+          # 5. 合并并去重（保留原始行顺序）
+          cat download_temp/part.txt | awk '!seen[$0]++' > live.txt
+          
+          # 6. 显示结果统计
+          echo "下载完成！直播源条目数：$(wc -l < live.txt)"
+      
+      - name: 上传结果文件
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-txt
+          path: live.txt
+          retention-days: 7
+
+      - name: 提交并推送到仓库（可选）
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add live.txt
+          git diff --staged --quiet || git commit -m "自动更新直播源 $(date '+%Y-%m-%d')"
+          git push
