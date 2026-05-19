@@ -1,213 +1,69 @@
-name: 下载OK影视直播源
+# .github/workflows/update-tv-playlist-cached.yml
+name: 更新电视直播源（带缓存）
 
 on:
   schedule:
     - cron: '0 0 * * *'
+    - cron: '0 10 * * *'
   workflow_dispatch:
 
-# 添加权限配置
+env:
+  SOURCE_URL: "https://js.iptvlive.icu/abc123"
+  OUTPUT_FILE: "tv.txt"
+
 permissions:
   contents: write
 
 jobs:
-  download-and-save:
+  download:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    
     steps:
-      - name: 签出仓库代码
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          # 使用完整的git历史
-          fetch-depth: 0
-          
-      - name: 配置git
+          persist-credentials: true
+          fetch-depth: 1
+      
+      - name: 尝试下载（失败时保留旧文件）
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: 安装依赖工具
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq curl wget
+          echo "开始下载: $(date)"
           
-      - name: 下载并解析主播放列表
-        run: |
-          MAIN_URL="https://js.iptvlive.icu/abc123"
-          
-          echo "正在获取主播放列表..."
-          
-          curl -s -L --retry 3 --retry-delay 2 \
-            -H "User-Agent: okHttp/3.12.1" \
-            -H "Accept: application/json" \
-            "$MAIN_URL" > main_data.json
-          
-          if [ ! -s main_data.json ]; then
-            echo "错误：无法获取主播放列表数据"
-            exit 1
+          # 备份当前文件
+          if [ -f "$OUTPUT_FILE" ]; then
+            cp "$OUTPUT_FILE" "${OUTPUT_FILE}.backup"
           fi
           
-          echo "获取成功，开始解析..."
+          # 尝试下载，设置更长的超时
+          HTTP_CODE=$(curl -A "VLC/3.0.20" \
+               -w "%{http_code}" \
+               --connect-timeout 15 \
+               --max-time 30 \
+               -o "$OUTPUT_FILE.tmp" \
+               --silent \
+               "$SOURCE_URL")
           
-          # 使用jq提取URL
-          jq -r '.lives[]?.url' main_data.json | grep -v '^null$' > source_urls.txt
-          
-          URL_COUNT=$(wc -l < source_urls.txt)
-          echo "成功提取了 $URL_COUNT 个直播源地址"
-          
-          if [ "$URL_COUNT" -eq 0 ]; then
-            echo "错误：没有找到任何直播源URL"
-            exit 1
-          fi
-          
-          echo "前5个直播源地址："
-          head -5 source_urls.txt
-          
-      - name: 显示所有提取的URL
-        run: |
-          echo ""
-          echo "总计：$(wc -l < source_urls.txt) 个直播源地址"
-          echo "=========================================="
-          cat source_urls.txt
-          echo "=========================================="
-          
-      - name: 防并发下载所有直播源
-        run: |
-          mkdir -p download_temp
-          > live.txt
-          
-          MAX_CONCURRENT=3
-          mkdir -p /tmp/download_pids
-          
-          download_url() {
-              local url="$1"
-              local index="$2"
-              local temp_file="/tmp/download_pids/download_${index}.tmp"
-              
-              echo "[$(date '+%H:%M:%S')] 开始下载 #${index}"
-              
-              if curl -s -L --max-time 30 --connect-timeout 10 --retry 2 \
-                -H "User-Agent: okHttp/3.12.1" \
-                -H "Accept: */*" \
-                "$url" > "$temp_file" 2>/dev/null; then
-                  
-                  if [ -s "$temp_file" ]; then
-                      file_size=$(wc -c < "$temp_file")
-                      echo "[$(date '+%H:%M:%S')] ✓ 成功 #${index} (${file_size} 字节)"
-                      
-                      echo "# Source: $url" >> "download_temp/part_${index}.txt"
-                      echo "# Downloaded: $(date '+%Y-%m-%d %H:%M:%S')" >> "download_temp/part_${index}.txt"
-                      cat "$temp_file" >> "download_temp/part_${index}.txt"
-                      echo "" >> "download_temp/part_${index}.txt"
-                      echo "# End of source $index" >> "download_temp/part_${index}.txt"
-                      echo "" >> "download_temp/part_${index}.txt"
-                      return 0
-                  else
-                      echo "[$(date '+%H:%M:%S')] ✗ 失败（空文件） #${index}"
-                      return 1
-                  fi
-              else
-                  echo "[$(date '+%H:%M:%S')] ✗ 失败（连接错误） #${index}"
-                  return 1
-              fi
-          }
-          
-          export -f download_url
-          
-          total_urls=$(wc -l < source_urls.txt)
-          echo "开始下载 ${total_urls} 个直播源，最大并发数: ${MAX_CONCURRENT}"
-          echo "=========================================="
-          
-          current_index=0
-          active_jobs=0
-          
-          while IFS= read -r url; do
-              [ -z "$url" ] && continue
-              current_index=$((current_index + 1))
-              download_url "$url" "$current_index" &
-              active_jobs=$((active_jobs + 1))
-              
-              if [ $active_jobs -ge $MAX_CONCURRENT ]; then
-                  wait -n 2>/dev/null || true
-                  active_jobs=$((active_jobs - 1))
-              fi
-              sleep 0.5
-          done < source_urls.txt
-          
-          echo "=========================================="
-          echo "等待所有下载任务完成..."
-          wait
-          echo "所有下载任务已完成"
-          
-      - name: 合并所有下载内容
-        run: |
-          > live.txt
-          success_count=0
-          
-          if ls download_temp/part_*.txt 1>/dev/null 2>&1; then
-              for file in $(ls download_temp/part_*.txt 2>/dev/null | sort -t_ -k2 -n); do
-                  if [ -s "$file" ]; then
-                      cat "$file" >> live.txt
-                      success_count=$((success_count + 1))
-                  fi
-              done
-              
-              echo "成功下载: ${success_count} 个直播源"
-              
-              # 使用awk去重
-              cp live.txt live.tmp
-              awk '!seen[$0]++ || /^#/ || /^$/' live.tmp > live.txt
-              rm live.tmp
-              
-              STREAM_COUNT=$(grep -c '^http' live.txt || echo 0)
-              TOTAL_LINES=$(wc -l < live.txt)
-              
-              echo "去重后保留 ${TOTAL_LINES} 行"
-              echo "其中直播源地址: ${STREAM_COUNT} 个"
-              
-              echo ""
-              echo "最终文件大小：$(wc -c < live.txt) 字节"
-              echo ""
-              echo "文件预览（前20行）："
-              echo "----------------------------------------"
-              head -20 live.txt
-              echo "----------------------------------------"
+          if [ "$HTTP_CODE" = "200" ] && [ -s "$OUTPUT_FILE.tmp" ]; then
+            mv "$OUTPUT_FILE.tmp" "$OUTPUT_FILE"
+            echo "✓ 下载成功 (HTTP $HTTP_CODE)"
+            echo "文件大小: $(wc -c < $OUTPUT_FILE) 字节"
           else
-              echo "错误：没有成功下载任何内容"
+            echo "✗ 下载失败 (HTTP $HTTP_CODE)"
+            if [ -f "${OUTPUT_FILE}.backup" ]; then
+              echo "使用上次成功的内容"
+              cp "${OUTPUT_FILE}.backup" "$OUTPUT_FILE"
+            else
+              echo "错误: 无可用缓存"
               exit 1
+            fi
           fi
           
-      - name: 清理临时文件
+          # 清理临时文件
+          rm -f "${OUTPUT_FILE}.tmp" "${OUTPUT_FILE}.backup"
+      
+      - name: 提交更新
         run: |
-          rm -rf download_temp
-          rm -rf /tmp/download_pids
-          rm -f source_urls.txt main_data.json live.tmp
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           
-      - name: 上传结果文件
-        uses: actions/upload-artifact@v4
-        with:
-          name: live-txt
-          path: live.txt
-          retention-days: 7
-          
-      - name: 提交并推送到仓库
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ -s live.txt ]; then
-              # 拉取最新更改避免冲突
-              git pull --rebase || true
-              
-              git add live.txt
-              if ! git diff --staged --quiet; then
-                  git commit -m "自动更新直播源 $(date '+%Y-%m-%d %H:%M:%S')"
-                  # 使用GITHUB_TOKEN进行推送
-                  git push https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:${GITHUB_REF_NAME}
-                  echo "已提交到仓库"
-              else
-                  echo "没有变化，跳过提交"
-              fi
-          else
-              echo "live.txt为空，跳过提交"
-          fi
+          git add "$OUTPUT_FILE" --force
+          git diff --cached --quiet || git commit -m "更新直播源 - $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
+          git push origin HEAD:${GITHUB_REF_NAME} --force-with-lease || true
