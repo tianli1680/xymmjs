@@ -33,7 +33,7 @@ jobs:
           
       - name: 下载并解析主播放列表
         run: |
-          MAIN_URL="https://js.iptvlive.icu/iptv168"
+          MAIN_URL="https://js.iptvlive.icu/abc123"
           
           echo "正在获取主播放列表..."
           
