@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  SOURCE_URL: "https://js.iptvlive.icu/8520"
+  SOURCE_URL: "https://js.iptvlive.icu/xymm"
   OUTPUT_FILE: "tv.txt"
 
 permissions:
