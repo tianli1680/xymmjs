@@ -3,7 +3,7 @@ name: 更新电视直播源（带缓存）
 
 on:
   schedule:
-   - cron: '*/20 * * * *'
+   - cron: '0 21 * * *'
   workflow_dispatch:
 
 env:
