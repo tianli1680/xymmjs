@@ -177,7 +177,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-168天 6小时 55分钟
+169天 6小时 43分钟
 
 </div>
 
@@ -192,7 +192,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-27 IP
+10 IP
 
 </div>
 
@@ -207,7 +207,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-12 IP
+10 IP
 
 </div>
 
@@ -222,7 +222,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-2026-09-04 06:51:24
+2026-09-05 06:16:15
 
 </div>
 
@@ -237,7 +237,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-2636
+4542
 
 </div>
 
@@ -350,6 +350,16 @@ src="https://tv1288.xyz/zfb.jpg">
 
 <div class="support-item">
 
+<b>李传峰</b><br>
+
+2026-09-04　赞助¥10元
+
+</div>
+
+
+
+<div class="support-item">
+
 <b>日出东方</b><br>
 
 2026-09-03　赞助¥5元
@@ -433,16 +443,6 @@ src="https://tv1288.xyz/zfb.jpg">
 <b>御驾轻风飘扬</b><br>
 
 2026-08-14　赞助¥5元
-
-</div>
-
-
-
-<div class="support-item">
-
-<b>YJF</b><br>
-
-2026-08-12　赞助¥2元
 
 </div>
 
