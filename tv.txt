@@ -32,7 +32,118 @@ font-family:Microsoft YaHei;
 
 }
 
+/* ================================
+   9月30日停止服务公告弹窗
+   ================================ */
 
+.notice-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.38);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:99999;
+    padding:20px;
+    box-sizing:border-box;
+    animation:noticeFadeIn .5s ease;
+}
+
+.notice-box{
+    width:100%;
+    max-width:520px;
+    background:#fff;
+    border-radius:18px;
+    padding:28px 24px 24px;
+    box-sizing:border-box;
+    text-align:center;
+    box-shadow:0 12px 40px rgba(0,0,0,.22);
+    animation:noticeBoxIn .5s ease;
+}
+
+.notice-title{
+    font-size:21px;
+    font-weight:bold;
+    color:#087f7b;
+    margin-bottom:18px;
+}
+
+.notice-text{
+    font-size:16px;
+    line-height:1.9;
+    color:#444;
+}
+
+.notice-countdown{
+    margin-top:18px;
+    font-size:14px;
+    color:#999;
+}
+
+.notice-countdown span{
+    display:inline-block;
+    min-width:22px;
+    font-weight:bold;
+    color:#087f7b;
+}
+
+@keyframes noticeFadeIn{
+    from{opacity:0}
+    to{opacity:1}
+}
+
+@keyframes noticeBoxIn{
+    from{
+        opacity:0;
+        transform:translateY(20px) scale(.96);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0) scale(1);
+    }
+}
+
+.notice-overlay.notice-hide{
+    animation:noticeFadeOut .6s ease forwards;
+}
+
+.notice-overlay.notice-hide .notice-box{
+    animation:noticeBoxOut .6s ease forwards;
+}
+
+@keyframes noticeFadeOut{
+    from{opacity:1}
+    to{opacity:0}
+}
+
+@keyframes noticeBoxOut{
+    from{
+        opacity:1;
+        transform:translateY(0) scale(1);
+    }
+    to{
+        opacity:0;
+        transform:translateY(-10px) scale(.96);
+    }
+}
+
+/* 手机浏览器 */
+@media(max-width:600px){
+    .notice-box{
+        max-width:92%;
+        padding:24px 18px 20px;
+        border-radius:16px;
+    }
+
+    .notice-title{
+        font-size:19px;
+    }
+
+    .notice-text{
+        font-size:15px;
+        line-height:1.85;
+    }
+}
 
 .head{
 
@@ -138,7 +249,61 @@ border-bottom:1px solid #eee;
 
 <body>
 
+<!-- 9月30日停止服务公告 -->
+<div class="notice-overlay" id="serviceNotice">
 
+    <div class="notice-box">
+
+        <div class="notice-title">
+            📢 提前遗憾通知
+        </div>
+
+        <div class="notice-text">
+            因远程API数据接口月底到期，<br>
+            本程序历时已运行170多天，<br>
+            故此有关 <b>migu</b> 访问服务<br>
+            将于 <b>9月30日</b> 停止使用。
+        </div>
+
+        <div class="notice-countdown">
+            本提示将在 <span id="noticeSeconds">10</span> 秒后自动关闭
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+(function(){
+
+    var seconds = 10;
+    var notice = document.getElementById("serviceNotice");
+    var counter = document.getElementById("noticeSeconds");
+
+    var timer = setInterval(function(){
+
+        seconds--;
+
+        if(seconds <= 0){
+
+            clearInterval(timer);
+
+            notice.classList.add("notice-hide");
+
+            setTimeout(function(){
+                notice.style.display = "none";
+            }, 600);
+
+        }else{
+
+            counter.textContent = seconds;
+
+        }
+
+    },1000);
+
+})();
+</script>
 
 <div class="head">
 
@@ -177,7 +342,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-176天 6小时 55分钟
+177天 6小时 46分钟
 
 </div>
 
@@ -192,7 +357,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-131 IP
+16 IP
 
 </div>
 
@@ -207,7 +372,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-310 IP
+183 IP
 
 </div>
 
@@ -222,7 +387,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-2026-09-12 06:34:25
+2026-09-13 06:35:59
 
 </div>
 
@@ -237,7 +402,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-3367
+5122
 
 </div>
 
