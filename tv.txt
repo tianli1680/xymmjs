@@ -342,7 +342,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-178天 6小时 47分钟
+179天 7小时 39分钟
 
 </div>
 
@@ -357,7 +357,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-74 IP
+69 IP
 
 </div>
 
@@ -372,7 +372,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-65 IP
+243 IP
 
 </div>
 
@@ -387,7 +387,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-2026-09-14 06:39:48
+2026-09-15 07:23:33
 
 </div>
 
@@ -402,7 +402,7 @@ border-bottom:1px solid #eee;
 
 <div class="num">
 
-3437
+2402
 
 </div>
 
@@ -515,19 +515,9 @@ src="https://tv1288.xyz/zfb.jpg">
 
 <div class="support-item">
 
-<b>Thank</b><br>
+<b>李传峰</b><br>
 
-you　for
-
-</div>
-
-
-
-<div class="support-item">
-
-<b><button</b><br>
-
-type="button"　id="cf-footer-ip-reveal"
+2026-09-04　赞助¥10元
 
 </div>
 
@@ -535,19 +525,9 @@ type="button"　id="cf-footer-ip-reveal"
 
 <div class="support-item">
 
-<b>Was</b><br>
+<b>日出东方</b><br>
 
-this　page
-
-</div>
-
-
-
-<div class="support-item">
-
-<b><link</b><br>
-
-rel="stylesheet"　id="cf_styles-css"
+2026-09-03　赞助¥5元
 
 </div>
 
@@ -555,19 +535,9 @@ rel="stylesheet"　id="cf_styles-css"
 
 <div class="support-item">
 
-<b>class="mx-auto</b><br>
+<b>支付宝**悦</b><br>
 
-pt-10　lg:pt-6
-
-</div>
-
-
-
-<div class="support-item">
-
-<b><p>The</b><br>
-
-owner　of
+2026-09-02　赞助¥2元
 
 </div>
 
@@ -575,19 +545,9 @@ owner　of
 
 <div class="support-item">
 
-<b><meta</b><br>
+<b>꧁鱼꧂</b><br>
 
-name="viewport"　content="width=device-width,initial-scale=1"
-
-</div>
-
-
-
-<div class="support-item">
-
-<b><meta</b><br>
-
-name="robots"　content="noindex,
+2026-08-20　赞助¥5元
 
 </div>
 
@@ -595,9 +555,9 @@ name="robots"　content="noindex,
 
 <div class="support-item">
 
-<b>for</b><br>
+<b>支付宝**佳</b><br>
 
-more　details.
+2026-08-20　赞助¥40元
 
 </div>
 
@@ -605,9 +565,49 @@ more　details.
 
 <div class="support-item">
 
-<b>class="inline-block</b><br>
+<b>支付宝*敏</b><br>
 
-md:block　mr-2
+2026-08-16　赞助¥10元
+
+</div>
+
+
+
+<div class="support-item">
+
+<b>支付宝C.K.YONG</b><br>
+
+2026-08-16　赞助¥10元
+
+</div>
+
+
+
+<div class="support-item">
+
+<b>沈海天一线</b><br>
+
+2026-08-16　赞助¥2元
+
+</div>
+
+
+
+<div class="support-item">
+
+<b>支付宝**龙</b><br>
+
+2026-08-15　赞助¥5元
+
+</div>
+
+
+
+<div class="support-item">
+
+<b>御驾轻风飘扬</b><br>
+
+2026-08-14　赞助¥5元
 
 </div>
 
@@ -652,16 +652,6 @@ href="/?page=3#support">
 href="/?page=4#support">
 
 4
-
-</a>
-
-
-
-<a class="btn"
-
-href="/?page=5#support">
-
-5
 
 </a>
 
